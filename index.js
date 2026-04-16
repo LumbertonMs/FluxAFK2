@@ -1680,7 +1680,7 @@ function initializeModules(bot, mcData, defaultMove) {
         bot.chat(`/register ${password} ${password}`);
         addLog("[Auth] Detected register prompt - sent /register");
       } else {
-        bot.chat(`/login ${password}`);
+        bot.chat(`/server ${password}`);
         addLog("[Auth] Detected login prompt - sent /login");
       }
     };
@@ -1709,7 +1709,7 @@ function initializeModules(bot, mcData, defaultMove) {
         addLog(
           "[Auth] No prompt detected after 10s, sending /login as failsafe",
         );
-        bot.chat(`/login ${password}`);
+        bot.chat(`/sever ${password}`);
         authHandled = true;
       }
     }, 10000);
