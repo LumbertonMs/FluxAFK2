@@ -1709,7 +1709,7 @@ function initializeModules(bot, mcData, defaultMove) {
         addLog(
           "[Auth] No prompt detected after 10s, sending /login as failsafe",
         );
-        bot.chat(`/sever ${password}`);
+        bot.chat(`/server ${password}`);
         authHandled = true;
       }
     }, 10000);
