@@ -247,10 +247,10 @@ function startBot(config) {
     const reasonStr = typeof reason === "string" ? reason : JSON.stringify(reason);
     console.log(`[${config.name}] kicked:`, reasonStr);
 
-    // Proxy /server transfers sometimes surface as a kick with a transfer-y
-    // reason. Don't mark as error in that case — let 'end' trigger reconnect.
+    // Proxy /server transfers sometimes surface as a kick. Don't mark as error
+    // in that case — let 'end' trigger reconnect.
     if (entry.transferring || looksLikeTransfer(reasonStr)) {
-      heartbeat(config.id, "connecting", `Server transfer: ${reasonStr.slice(0, 120)}`, null);
+      console.log(`[${config.name}] treating kick as server transfer`);
     } else {
       heartbeat(config.id, "error", `Kicked: ${reasonStr.slice(0, 200)}`, null);
     }
@@ -278,10 +278,15 @@ function startBot(config) {
       return;
     }
 
+    // If we sent a /server command, this disconnect is expected (proxy transfer)
+    // Always treat it as a transfer, don't mark as offline
     const isTransfer = entry.transferring || looksLikeTransfer(reasonStr);
 
-    // Reset uptime on a real disconnect; preserve on quick proxy transfer
-    if (!isTransfer) {
+    // Always report as "connecting" for transfers (including socket closures from /server commands)
+    // Only report as "offline" for unexpected disconnections
+    if (isTransfer) {
+      heartbeat(config.id, "connecting", `Transferring: ${reasonStr}`, null);
+    } else {
       entry.uptimeStart = null;
       heartbeat(config.id, "offline", `Disconnected: ${reasonStr}`, null);
     }
