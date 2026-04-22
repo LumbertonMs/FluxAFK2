@@ -230,7 +230,6 @@ function startBot(config) {
         });
     }, 10000); // Wait 10 seconds for full connection stability
   });
-  });
 
   // Chat-match commands. mineflayer emits 'messagestr' with plain text.
   bot.on("messagestr", (msg) => {
