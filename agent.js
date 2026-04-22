@@ -164,28 +164,43 @@ function startBot(config) {
       const messagesToSend = [];
 
       if (config.login_password) {
-        messagesToSend.push(`/login ${config.login_password}`);
+        messagesToSend.push({ msg: `/login ${config.login_password}`, type: "login" });
       }
 
       (config.commands || [])
         .filter((c) => c.trigger === "on_join")
-        .forEach((c) => messagesToSend.push(c.command));
+        .forEach((c) => messagesToSend.push({ msg: c.command, type: "on_join_command" }));
 
       (config.messages || []).forEach((m) => {
-        messagesToSend.push(m.content);
+        messagesToSend.push({ msg: m.content, type: "message" });
         if (m.repeat && m.repeat_delay_seconds > 0) {
           const id = setInterval(() => {
-            try { bot.chat(m.content); } catch {}
+            try { 
+              if (typeof bot.chat === 'function') {
+                bot.chat(m.content);
+              }
+            } catch (e) {
+              console.log(`[${config.name}] repeat message error:`, e.message);
+            }
           }, m.repeat_delay_seconds * 1000);
           entry.intervals.push(id);
         }
       });
 
       // Send messages with delay to avoid spamming
-      messagesToSend.forEach((msg, index) => {
+      messagesToSend.forEach(({ msg, type }, index) => {
         setTimeout(() => {
-          try { bot.chat(msg); } catch {}
-        }, index * 1000); // 1 second delay between each
+          if (typeof bot.chat === 'function') {
+            try { 
+              bot.chat(msg);
+              console.log(`[${config.name}] sent ${type}: ${msg.slice(0, 50)}`);
+            } catch (e) {
+              console.log(`[${config.name}] failed to send ${type}:`, e.message);
+            }
+          } else {
+            console.log(`[${config.name}] bot.chat not available for ${type}`);
+          }
+        }, index * 1000 + 100); // 1 second delay between each + 100ms offset
       });
 
       // Interval commands
@@ -193,7 +208,13 @@ function startBot(config) {
         .filter((c) => c.trigger === "interval" && c.interval_seconds > 0)
         .forEach((c) => {
           const id = setInterval(() => {
-            try { bot.chat(c.command); } catch {}
+            if (typeof bot.chat === 'function') {
+              try { 
+                bot.chat(c.command);
+              } catch (e) {
+                console.log(`[${config.name}] interval command error:`, e.message);
+              }
+            }
           }, c.interval_seconds * 1000);
           entry.intervals.push(id);
         });
