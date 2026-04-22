@@ -35,6 +35,7 @@ const TRANSFER_HINTS = [
   "server", "transfer", "moved", "switching", "redirect",
   "reconnect", "socketclosed", "endofstream", "read econnreset",
   "spam", "rate limit", "too many messages", "flood", "kicked for",
+  "unknown command", "invalid", "not found", "error", "disconnected",
 ];
 
 function looksLikeTransfer(reason) {
@@ -199,7 +200,7 @@ function startBot(config) {
           }, c.interval_seconds * 1000);
           entry.intervals.push(id);
         });
-    }, 2000);
+    }, 5000);
   });
 
   // Chat-match commands. mineflayer emits 'messagestr' with plain text.
@@ -260,6 +261,12 @@ function startBot(config) {
     if (config.auto_reconnect !== false) {
       // Fast reconnect for proxy transfers, exponential-ish for real failures
       entry.reconnectAttempts += 1;
+      if (entry.reconnectAttempts > 5) {
+        console.log(`[${config.name}] too many reconnect attempts, giving up`);
+        heartbeat(config.id, "error", `Too many reconnect attempts: ${reasonStr}`, null);
+        running.delete(config.id);
+        return;
+      }
       const base = isTransfer ? 1500 : 3000;
       const delay = Math.min(base * Math.max(1, entry.reconnectAttempts), 30_000);
       scheduleReconnect(config.id, delay, isTransfer ? "server transfer" : reasonStr.slice(0, 80));
