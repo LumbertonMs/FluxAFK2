@@ -34,6 +34,7 @@ const running = new Map();
 const TRANSFER_HINTS = [
   "server", "transfer", "moved", "switching", "redirect",
   "reconnect", "socketclosed", "endofstream", "read econnreset",
+  "spam", "rate limit", "too many messages", "flood", "kicked for",
 ];
 
 function looksLikeTransfer(reason) {
@@ -162,21 +163,31 @@ function startBot(config) {
 
     // Run on_join + initial messages once per fresh connection
     setTimeout(() => {
+      const messagesToSend = [];
+
       if (config.login_password) {
-        try { bot.chat(`/login ${config.login_password}`); } catch {}
+        messagesToSend.push(`/login ${config.login_password}`);
       }
+
       (config.commands || [])
         .filter((c) => c.trigger === "on_join")
-        .forEach((c) => { try { bot.chat(c.command); } catch {} });
+        .forEach((c) => messagesToSend.push(c.command));
 
       (config.messages || []).forEach((m) => {
-        try { bot.chat(m.content); } catch {}
+        messagesToSend.push(m.content);
         if (m.repeat && m.repeat_delay_seconds > 0) {
           const id = setInterval(() => {
             try { bot.chat(m.content); } catch {}
           }, m.repeat_delay_seconds * 1000);
           entry.intervals.push(id);
         }
+      });
+
+      // Send messages with delay to avoid spamming
+      messagesToSend.forEach((msg, index) => {
+        setTimeout(() => {
+          try { bot.chat(msg); } catch {}
+        }, index * 1000); // 1 second delay between each
       });
 
       // Interval commands
