@@ -159,13 +159,23 @@ function startBot(config) {
     entry.uptimeStart = entry.uptimeStart || new Date().toISOString();
     heartbeat(config.id, "online", "Connected", entry.uptimeStart);
 
-    // Run on_join + initial messages once per fresh connection
+    // Send login password immediately if needed (server may require it before other commands)
+    if (config.login_password) {
+      setTimeout(() => {
+        if (typeof bot.chat === 'function') {
+          try {
+            bot.chat(`/login ${config.login_password}`);
+            console.log(`[${config.name}] sent login command`);
+          } catch (e) {
+            console.log(`[${config.name}] failed to send login:`, e.message);
+          }
+        }
+      }, 1000);
+    }
+
+    // Run on_join commands + initial messages after a longer delay to ensure full connection stability
     setTimeout(() => {
       const messagesToSend = [];
-
-      if (config.login_password) {
-        messagesToSend.push({ msg: `/login ${config.login_password}`, type: "login" });
-      }
 
       (config.commands || [])
         .filter((c) => c.trigger === "on_join")
@@ -200,7 +210,7 @@ function startBot(config) {
           } else {
             console.log(`[${config.name}] bot.chat not available for ${type}`);
           }
-        }, index * 1000 + 100); // 1 second delay between each + 100ms offset
+        }, index * 1500 + 500); // 1.5 second delay between each + 500ms offset to spread them out
       });
 
       // Interval commands
@@ -218,7 +228,8 @@ function startBot(config) {
           }, c.interval_seconds * 1000);
           entry.intervals.push(id);
         });
-    }, 5000);
+    }, 10000); // Wait 10 seconds for full connection stability
+  });
   });
 
   // Chat-match commands. mineflayer emits 'messagestr' with plain text.
