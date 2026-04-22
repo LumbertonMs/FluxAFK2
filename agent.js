@@ -33,7 +33,7 @@ const running = new Map();
 // (proxy server switch, normal network blip), not give up.
 const TRANSFER_HINTS = [
   "server", "transfer", "moved", "switching", "redirect",
-  "reconnect", "socketclosed", "endofstream", "read econnreset",
+  "reconnect", "endofstream", "read econnreset",
   "spam", "rate limit", "too many messages", "flood", "kicked for",
   "unknown command", "invalid", "not found", "error", "disconnected",
 ];
@@ -264,7 +264,7 @@ function startBot(config) {
         running.delete(config.id);
         return;
       }
-      const base = isTransfer ? 1500 : 3000;
+      const base = isTransfer ? 1500 : 5000;
       const delay = Math.min(base * Math.max(1, entry.reconnectAttempts), 30_000);
       scheduleReconnect(config.id, delay, isTransfer ? "server transfer" : reasonStr.slice(0, 80));
     } else {
