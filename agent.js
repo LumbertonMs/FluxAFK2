@@ -113,6 +113,12 @@ function startBot(config) {
     return;
   }
 
+  if (!bot.chat) {
+    console.log(`[${config.name}] bot.chat not available, aborting`);
+    heartbeat(config.id, "error", "Bot chat method not available", null);
+    return;
+  }
+
   const entry = {
     bot,
     config,
