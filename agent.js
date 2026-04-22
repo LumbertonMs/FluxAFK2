@@ -115,12 +115,6 @@ function startBot(config) {
     return;
   }
 
-  if (!bot.chat) {
-    console.log(`[${config.name}] bot.chat not available, aborting`);
-    heartbeat(config.id, "error", "Bot chat method not available", null);
-    return;
-  }
-
   const entry = {
     bot,
     config,
@@ -135,17 +129,20 @@ function startBot(config) {
 
   // Patch chat to detect outgoing /server commands so we can treat the
   // expected disconnect as a proxy transfer, not an error.
-  const originalChat = bot.chat.bind(bot);
-  bot.chat = (msg) => {
-    try {
-      if (typeof msg === "string" && /^\/server(\s|$)/i.test(msg.trim())) {
-        entry.transferring = true;
-        // Safety: clear the flag if the transfer never finishes
-        setTimeout(() => { entry.transferring = false; }, 15_000);
-      }
-    } catch {}
-    return originalChat(msg);
-  };
+  let originalChat;
+  if (bot.chat) {
+    originalChat = bot.chat.bind(bot);
+    bot.chat = (msg) => {
+      try {
+        if (typeof msg === "string" && /^\/server(\s|$)/i.test(msg.trim())) {
+          entry.transferring = true;
+          // Safety: clear the flag if the transfer never finishes
+          setTimeout(() => { entry.transferring = false; }, 15_000);
+        }
+      } catch {}
+      return originalChat(msg);
+    };
+  }
 
   bot.on("login", () => {
     console.log(`[${config.name}] logged in`);
